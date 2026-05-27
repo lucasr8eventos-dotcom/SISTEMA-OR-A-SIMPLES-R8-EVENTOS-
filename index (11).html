@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema de Orçamentos</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --navy: #0f172a;
+    --navy-light: #1e293b;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #64748b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Outfit', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+
+  .app { max-width: 480px; margin: 0 auto; background: var(--card); min-height: 100vh; display: flex; flex-direction: column; box-shadow: 0 0 40px rgba(0,0,0,0.08); }
+
+  /* ── HEADER ── */
+  .app-header { background: #fff; color: var(--navy); padding: 12px 18px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 100; border-bottom: 2px solid var(--primary); }
+  .header-logo { height: 40px; max-width: 80px; flex-shrink: 0; display: none; }
+  .header-logo img { height: 100%; width: 100%; object-fit: contain; }
+  .header-text .title { font-size: 16px; font-weight: 800; letter-spacing: 0.3px; color: var(--navy); }
+  .header-text .subtitle { font-size: 11px; color: var(--muted); font-weight: 400; margin-top: 1px; }
+  .header-back { background: none; border: none; color: var(--navy); font-size: 22px; cursor: pointer; padding: 4px 6px; margin-right: 2px; line-height: 1; }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex: 1; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ── HOME ── */
+  .home-content { padding: 22px 18px; flex: 1; }
+  .home-hero { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%); border-radius: 18px; padding: 22px 20px; margin-bottom: 20px; position: relative; overflow: hidden; }
+  .home-hero::after { content: ''; position: absolute; right: -20px; top: -20px; width: 120px; height: 120px; background: var(--primary); border-radius: 50%; opacity: 0.12; }
+  .home-hero .welcome { font-size: 21px; font-weight: 800; color: #fff; margin-bottom: 4px; }
+  .home-hero .welcome-sub { font-size: 13px; color: rgba(255,255,255,0.6); }
+  .home-hero .btn-novo-hero { margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary); color: #fff; border: none; border-radius: 12px; padding: 14px 20px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; font-family: inherit; transition: background 0.15s; }
+  .home-hero .btn-novo-hero:active { background: var(--primary-dark); }
+  .home-hero .btn-novo-recibo { margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; background: rgba(255,255,255,0.1); color: #fff; border: 1.5px solid rgba(255,255,255,0.3); border-radius: 12px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; width: 100%; font-family: inherit; transition: background 0.15s; }
+  .home-hero .btn-novo-recibo:active { background: rgba(255,255,255,0.2); }
+
+  .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px; }
+  .quick-card { background: var(--card); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 10px; text-align: center; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+  .quick-card:active { background: #f1f5f9; border-color: var(--primary); }
+  .quick-card .qc-icon { font-size: 24px; margin-bottom: 5px; display: block; }
+  .quick-card .qc-label { font-size: 12px; font-weight: 700; color: var(--text); }
+
+  .setup-banner { background: #fff8e1; border: 1.5px solid #ffe082; border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+  .setup-banner .sb-icon { font-size: 22px; flex-shrink: 0; }
+  .setup-banner .sb-text { font-size: 13px; font-weight: 600; color: #7a5800; }
+  .setup-banner .sb-sub { font-size: 11px; color: #a07800; margin-top: 1px; }
+
+  .section-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+
+  .empty-state { text-align: center; padding: 36px 20px; color: var(--muted); }
+  .empty-state .es-icon { font-size: 44px; margin-bottom: 10px; }
+  .empty-state .es-text { font-size: 14px; font-weight: 500; }
+
+  /* ── FORM ── */
+  .form-scroll { padding: 16px 18px; flex: 1; overflow-y: auto; }
+  .info-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .info-badge { background: var(--bg); border-radius: 12px; padding: 10px 14px; }
+  .info-badge .ib-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+  .info-badge .ib-value { font-size: 16px; font-weight: 800; color: var(--text); margin-top: 2px; }
+
+  .form-group { margin-bottom: 12px; }
+  .form-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 5px; display: block; }
+  .form-input { width: 100%; border: 1.5px solid var(--border); border-radius: 11px; padding: 11px 14px; font-size: 15px; color: var(--text); background: #fff; outline: none; font-family: inherit; transition: border-color 0.15s; }
+  .form-input:focus { border-color: var(--primary); }
+  textarea.form-input { resize: none; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .toggle-row { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--bg); border-radius: 11px; margin-bottom: 12px; cursor: pointer; }
+  .toggle-row input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; flex-shrink: 0; }
+  .toggle-row label { font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; user-select: none; flex: 1; }
+  .toggle-row .toggle-hint { display: block; font-size: 11px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+
+  .section-divider { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin: 14px 0 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+
+  /* ── ITENS ── */
+  .itens-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .badge-count { background: var(--primary); color: #fff; border-radius: 20px; padding: 1px 8px; font-size: 12px; font-weight: 700; margin-left: 6px; }
+  .btn-add { background: var(--navy); color: #fff; border: none; border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .btn-add:active { background: var(--navy-light); }
+
+  .item-card { background: #fafafa; border: 1.5px solid var(--border); border-radius: 13px; padding: 13px 14px; margin-bottom: 8px; position: relative; }
+  .item-nome { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 3px; padding-right: 28px; }
+  .item-detalhe { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+  .item-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .item-col-label { font-size: 10px; font-weight: 700; color: var(--muted); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+  .item-ctrl { width: 100%; border: 1.5px solid var(--border); border-radius: 9px; padding: 7px 10px; font-size: 14px; font-weight: 700; text-align: center; color: var(--text); background: #fff; outline: none; font-family: inherit; }
+  .item-ctrl:focus { border-color: var(--primary); }
+  .item-ctrl.readonly { background: #f1f5f9; border-color: #e2e8f0; color: #94a3b8; }
+  .btn-remove { position: absolute; top: 10px; right: 10px; background: none; border: none; color: #ccc; font-size: 15px; cursor: pointer; line-height: 1; transition: color 0.15s; }
+  .btn-remove:hover { color: var(--primary); }
+
+  .total-bar { background: var(--navy); color: #fff; border-radius: 14px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .total-bar .tl { font-size: 13px; color: rgba(255,255,255,0.6); font-weight: 500; }
+  .total-bar .tv { font-size: 24px; font-weight: 800; }
+
+  /* ── ACTIONS ── */
+  .form-actions { padding: 14px 18px 20px; background: #fff; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 9px; }
+  .btn-pdf { background: var(--primary); color: #fff; border: none; border-radius: 13px; padding: 15px; font-size: 16px; font-weight: 800; cursor: pointer; width: 100%; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-pdf:active { background: var(--primary-dark); }
+  .btn-save { background: #fff; color: var(--text); border: 1.5px solid var(--border); border-radius: 13px; padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; font-family: inherit; }
+
+  /* ── PRODUTOS ── */
+  .prod-content { padding: 16px 18px; flex: 1; overflow-y: auto; }
+  .prod-item { background: #fff; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .prod-item.inactive { opacity: 0.4; }
+  .pi-nome { font-weight: 700; font-size: 14px; color: var(--text); }
+  .pi-cat { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .pi-preco { font-weight: 800; font-size: 14px; color: var(--text); }
+  .btn-fab { position: fixed; bottom: 24px; right: 24px; width: 54px; height: 54px; background: var(--primary); color: #fff; border: none; border-radius: 50%; font-size: 26px; cursor: pointer; box-shadow: 0 4px 18px rgba(230,57,70,0.35); display: flex; align-items: center; justify-content: center; z-index: 50; }
+
+  /* ── CONFIGURAÇÕES ── */
+  .conf-content { padding: 16px 18px; flex: 1; overflow-y: auto; }
+  .logo-upload-area { width: 100%; height: 110px; border: 2px dashed var(--border); border-radius: 14px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: var(--bg); margin-bottom: 5px; transition: border-color 0.15s; overflow: hidden; position: relative; }
+  .logo-upload-area:active { border-color: var(--primary); }
+  .logo-upload-area img { width: 100%; height: 100%; object-fit: contain; padding: 8px; }
+  .logo-placeholder { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--muted); pointer-events: none; }
+  .logo-placeholder .lp-icon { font-size: 28px; }
+  .logo-placeholder .lp-txt { font-size: 12px; font-weight: 600; }
+  .logo-hint { font-size: 11px; color: var(--muted); margin-bottom: 12px; }
+  .logo-remove-btn { background: none; border: none; color: var(--primary); font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 12px; display: none; font-family: inherit; }
+
+  /* ── SUGESTÃO CHIP ── */
+  .sugestao-chips { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+  .chip-sugestao { font-size: 11px; font-weight: 700; background: var(--bg); border: 1.5px solid var(--border); border-radius: 20px; padding: 3px 11px; color: var(--muted); cursor: pointer; transition: border-color 0.15s, color 0.15s; user-select: none; }
+  .chip-sugestao:active { border-color: var(--primary); color: var(--primary); }
+
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: flex; align-items: flex-end; }
+  .modal-overlay.hidden { display: none; }
+  .modal-sheet { background: #fff; border-radius: 22px 22px 0 0; width: 100%; max-height: 82vh; overflow-y: auto; padding: 6px 18px 28px; }
+  .modal-handle { width: 38px; height: 4px; background: #ddd; border-radius: 2px; margin: 12px auto 14px; }
+  .modal-title { font-size: 18px; font-weight: 800; color: var(--text); margin-bottom: 14px; }
+
+  .prod-option { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f1f5f9; cursor: pointer; }
+  .po-icon { width: 42px; height: 42px; background: var(--bg); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .po-nome { font-weight: 700; font-size: 14px; color: var(--text); }
+  .po-preco { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .btn-personalizado { background: var(--navy); border-radius: 13px; padding: 14px; text-align: center; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; margin-top: 14px; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--navy); color: #fff; padding: 12px 22px; border-radius: 22px; font-size: 14px; font-weight: 600; transition: transform 0.3s; z-index: 999; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .hidden { display: none !important; }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="app-header">
+    <button class="header-back hidden" id="btnBack" onclick="goBack()">←</button>
+    <div class="header-logo" id="headerLogoWrap">
+      <img id="logoImg" src="" alt="">
+    </div>
+    <div class="header-text">
+      <div class="title" id="headerTitle">Orçamentos</div>
+      <div class="subtitle" id="headerSub">Sistema de Orçamentos</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen active" id="screenHome">
+    <div class="home-content">
+      <div class="home-hero">
+        <div class="welcome" id="welcomeMsg">Bom dia! 👋</div>
+        <div class="welcome-sub" id="heroSub">Sistema de Orçamentos</div>
+        <button class="btn-novo-hero" onclick="novoOrcamento()">
+          <span>＋</span> Novo Orçamento
+        </button>
+        <button class="btn-novo-recibo" onclick="novoRecibo()">
+          <span>🧾</span> Novo Recibo
+        </button>
+      </div>
+
+      <div id="setupBanner" class="setup-banner hidden" onclick="abrirConfiguracoes()">
+        <div class="sb-icon">🏢</div>
+        <div>
+          <div class="sb-text">Configure sua empresa</div>
+          <div class="sb-sub">Adicione nome, logo e contato para usar no PDF</div>
+        </div>
+      </div>
+
+      <div class="quick-grid" style="grid-template-columns:repeat(2,1fr);">
+        <div class="quick-card" onclick="showScreen('screenProdutos')">
+          <span class="qc-icon">📦</span>
+          <div class="qc-label">Produtos</div>
+        </div>
+        <div class="quick-card" onclick="abrirConfiguracoes()">
+          <span class="qc-icon">⚙️</span>
+          <div class="qc-label">Ajustes</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ORÇAMENTO -->
+  <div class="screen" id="screenOrcamento">
+    <div class="form-scroll">
+      <div class="info-strip">
+        <div class="info-badge">
+          <div class="ib-label">Nº Orçamento</div>
+          <div class="ib-value" id="numOrcamento">–</div>
+        </div>
+        <div class="info-badge">
+          <div class="ib-label">Data</div>
+          <div class="ib-value" id="dataOrcamento">–</div>
+        </div>
+      </div>
+
+      <div class="section-divider" style="margin-top:0;padding-top:0;border-top:none;">Dados do Cliente</div>
+
+      <div class="form-group">
+        <label class="form-label">Nome / Razão Social *</label>
+        <input class="form-input" id="inputCliente" placeholder="Nome do cliente ou empresa" autocomplete="off" list="clienteSugestoes">
+        <datalist id="clienteSugestoes"><option value="CONSUMIDOR"></datalist>
+        <div class="sugestao-chips">
+          <span class="chip-sugestao" onclick="document.getElementById('inputCliente').value='CONSUMIDOR'">CONSUMIDOR</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">CPF / CNPJ</label>
+        <input class="form-input" id="inputClienteDoc" placeholder="000.000.000-00 ou 00.000.000/0000-00" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input class="form-input" id="inputClienteEmail" placeholder="email@exemplo.com" type="email" inputmode="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Telefone / WhatsApp</label>
+        <input class="form-input" id="inputClienteTelefone" placeholder="(00) 00000-0000" inputmode="tel">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Endereço</label>
+        <input class="form-input" id="inputClienteEndereco" placeholder="Rua, número, bairro, cidade">
+      </div>
+
+      <div class="section-divider">Proposta</div>
+      <div class="form-group">
+        <label class="form-label">Validade da proposta</label>
+        <input class="form-input" id="inputValidade" readonly>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Previsão de Entrega</label>
+        <input class="form-input" id="inputEntrega" placeholder="dd/mm/aaaa" inputmode="numeric" maxlength="10">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Observações</label>
+        <textarea class="form-input" id="inputObs" rows="4" placeholder="Informações adicionais, condições, detalhes do serviço…"></textarea>
+      </div>
+
+      <div class="section-divider">
+        Itens <span class="badge-count" id="badgeItens">0</span>
+      </div>
+      <div class="itens-head">
+        <span></span>
+        <button class="btn-add" onclick="showModalProduto()">＋ Adicionar item</button>
+      </div>
+      <div id="listaItens"></div>
+      <div class="total-bar">
+        <div class="tl">TOTAL DO ORÇAMENTO</div>
+        <div class="tv" id="totalDisplay">R$ 0,00</div>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-pdf" onclick="gerarPDF()">📄 Gerar PDF</button>
+    </div>
+  </div>
+
+  <!-- RECIBO -->
+  <div class="screen" id="screenRecibo">
+    <div class="form-scroll">
+      <div class="info-strip">
+        <div class="info-badge">
+          <div class="ib-label">Nº Recibo</div>
+          <div class="ib-value" id="numRecibo">–</div>
+        </div>
+        <div class="info-badge">
+          <div class="ib-label">Data</div>
+          <div class="ib-value" id="dataRecibo">–</div>
+        </div>
+      </div>
+
+      <div class="section-divider" style="margin-top:0;padding-top:0;border-top:none;">Pagador</div>
+
+      <div class="form-group">
+        <label class="form-label">Nome / Razão Social *</label>
+        <input class="form-input" id="inputRecPagador" placeholder="Nome do pagador" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">CPF / CNPJ</label>
+        <input class="form-input" id="inputRecPagadorDoc" placeholder="000.000.000-00 ou 00.000.000/0000-00" inputmode="numeric">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Valor *</label>
+        <input type="text" class="form-input" id="inputRecValor" placeholder="R$ 0,00" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor por extenso</label>
+        <textarea class="form-input" id="inputRecExtenso" rows="2" placeholder="Será preenchido automaticamente"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Forma de pagamento</label>
+        <select class="form-input" id="inputRecForma">
+          <option>PIX</option>
+          <option>Dinheiro</option>
+          <option>Cartão de Débito</option>
+          <option>Cartão de Crédito</option>
+          <option>Transferência bancária</option>
+          <option>Boleto</option>
+          <option>Cheque</option>
+          <option>Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Data do pagamento</label>
+        <input type="date" class="form-input" id="inputRecDataPagamento">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Referente a *</label>
+        <textarea class="form-input" id="inputRecReferente" rows="4" placeholder="Descrição do que está sendo pago"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Local (cidade)</label>
+        <input class="form-input" id="inputRecLocal" placeholder="Brasília" value="Brasília">
+      </div>
+      <label class="toggle-row" for="inputRecCanhoto">
+        <input type="checkbox" id="inputRecCanhoto" checked>
+        <span>
+          Incluir canhoto destacável
+          <span class="toggle-hint">Segunda via resumida com linha de corte (para arquivo / via do recebedor)</span>
+        </span>
+      </label>
+    </div>
+    <div class="form-actions">
+      <button class="btn-pdf" onclick="gerarPDFRecibo()">📄 Gerar PDF do Recibo</button>
+    </div>
+  </div>
+
+  <!-- PRODUTOS -->
+  <div class="screen" id="screenProdutos">
+    <div class="prod-content">
+      <div class="section-label" style="margin-bottom:12px;">Catálogo de produtos</div>
+      <div id="listaProdutos"></div>
+    </div>
+    <button class="btn-fab" onclick="novoProduto()">＋</button>
+  </div>
+
+  <!-- CONFIGURAÇÕES -->
+  <div class="screen" id="screenConfiguracoes">
+    <div class="conf-content">
+      <div class="form-group">
+        <label class="form-label">Logo da empresa</label>
+        <div class="logo-upload-area" onclick="document.getElementById('logoFileInput').click()">
+          <img id="logoPreviewConf" src="" style="display:none;">
+          <div class="logo-placeholder" id="logoPlaceholder">
+            <span class="lp-icon">🖼️</span>
+            <span class="lp-txt">Toque para adicionar logo</span>
+          </div>
+        </div>
+        <input type="file" id="logoFileInput" accept="image/*" style="display:none;" onchange="handleLogoUpload(this)">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div class="logo-hint">PNG, JPG ou SVG · fundo transparente recomendado</div>
+          <button class="logo-remove-btn" id="btnRemoveLogo" onclick="removerLogo()">✕ Remover logo</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nome da empresa *</label>
+        <input class="form-input" id="confNome" placeholder="Ex: Minha Empresa Ltda">
+      </div>
+      <div class="form-group">
+        <label class="form-label">CNPJ</label>
+        <input class="form-input" id="confCnpj" placeholder="00.000.000/0000-00" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Endereço</label>
+        <input class="form-input" id="confEndereco" placeholder="Rua, número, bairro, cidade">
+      </div>
+      <div class="two-col">
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input class="form-input" id="confTelefone" placeholder="(00) 0000-0000" inputmode="tel">
+        </div>
+        <div class="form-group">
+          <label class="form-label">WhatsApp</label>
+          <input class="form-input" id="confWhatsapp" placeholder="(00) 00000-0000" inputmode="tel">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Site / E-mail</label>
+        <input class="form-input" id="confSite" placeholder="Opcional">
+      </div>
+
+      <button class="btn-pdf" onclick="salvarConfiguracoes()" style="margin-top:8px;">💾 Salvar configurações</button>
+      <button class="btn-save" onclick="goBack()" style="margin-top:8px;">Cancelar</button>
+    </div>
+  </div>
+
+</div><!-- .app -->
+
+<!-- MODAL: ESCOLHER PRODUTO -->
+<div class="modal-overlay hidden" id="modalProduto">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Escolher produto / serviço</div>
+    <div id="modalListaProdutos"></div>
+    <div class="btn-personalizado" onclick="adicionarPersonalizado()">✏️  Item personalizado</div>
+  </div>
+</div>
+
+<!-- MODAL: ITEM PERSONALIZADO -->
+<div class="modal-overlay hidden" id="modalPersonalizado">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Item personalizado</div>
+    <div class="form-group">
+      <label class="form-label">Nome do produto / serviço</label>
+      <input class="form-input" id="pNome" placeholder="Ex: Consultoria">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Detalhe (opcional)</label>
+      <input class="form-input" id="pDetalhe" placeholder="Descrição adicional">
+    </div>
+    <div class="two-col">
+      <div class="form-group">
+        <label class="form-label">Quantidade</label>
+        <input type="number" class="form-input" id="pQtd" value="1" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor unitário</label>
+        <input type="text" class="form-input" id="pValor" placeholder="R$ 0,00">
+      </div>
+    </div>
+    <button class="btn-pdf" style="margin-top:4px;" onclick="confirmarPersonalizado()">Adicionar item</button>
+    <button class="btn-save" style="margin-top:8px;" onclick="fecharModalPersonalizado()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: NOVO / EDITAR PRODUTO -->
+<div class="modal-overlay hidden" id="modalNovoProduto">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modalNovoProdutoTitle">Novo produto</div>
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input class="form-input" id="npNome" placeholder="Nome do produto">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoria</label>
+      <input class="form-input" id="npCat" placeholder="Ex: Serviços, Equipamentos…">
+    </div>
+    <div class="two-col">
+      <div class="form-group">
+        <label class="form-label">Valor padrão</label>
+        <input type="text" class="form-input" id="npValor" placeholder="R$ 0,00">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Unidade</label>
+        <select class="form-input" id="npUnidade">
+          <option>Unidade</option>
+          <option>Diária</option>
+          <option>Mensal</option>
+          <option>Metro</option>
+          <option>Metro linear</option>
+          <option>Serviço</option>
+          <option>Pacote</option>
+          <option>Hora</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn-pdf" style="margin-top:4px;" onclick="salvarNovoProduto()">Salvar produto</button>
+    <button class="btn-save" style="margin-top:8px;" onclick="fecharModalNovoProduto()">Cancelar</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── EMPRESA (dados genéricos configuráveis) ──
+const EMPRESA_DEFAULT = { nome:'', cnpj:'', endereco:'', telefone:'', whatsapp:'', site:'', logo:'' };
+let empresa = JSON.parse(localStorage.getItem('app_empresa') || 'null') || { ...EMPRESA_DEFAULT };
+
+// ── STATE ──
+let state = {
+  produtos:        JSON.parse(localStorage.getItem('app_produtos') || '[]'),
+  orcamentoAtual:  null,
+  itens:           [],
+  screenHistory:   ['screenHome']
+};
+
+// ── UTILS ──
+const save = () => {
+  localStorage.setItem('app_produtos', JSON.stringify(state.produtos));
+};
+const saveEmpresa = () => localStorage.setItem('app_empresa', JSON.stringify(empresa));
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtMoeda   = v => (v||0).toLocaleString('pt-BR', { style:'currency', currency:'BRL' });
+const parseMoeda = s => {
+  if (!s) return 0;
+  return parseFloat(s.toString().replace(/[R$\s]/g,'').replace(/\./g,'').replace(',','.')) || 0;
+};
+const hoje       = () => new Date().toLocaleDateString('pt-BR');
+const novoNumOrc = () => {
+  const atual = parseInt(localStorage.getItem('app_seq') || '0') || 0;
+  const n = atual < 109 ? 110 : atual + 1;
+  localStorage.setItem('app_seq', n);
+  return String(n).padStart(4,'0');
+};
+const novoNumRecibo = () => {
+  const atual = parseInt(localStorage.getItem('app_seq_recibo') || '0') || 0;
+  const n = atual < 109 ? 110 : atual + 1;
+  localStorage.setItem('app_seq_recibo', n);
+  return String(n).padStart(4,'0');
+};
+
+function valorPorExtenso(valor) {
+  if (!valor || valor <= 0) return '';
+  const u = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
+  const d10 = ['dez', 'onze', 'doze', 'treze', 'quatorze', 'quinze', 'dezesseis', 'dezessete', 'dezoito', 'dezenove'];
+  const d = ['', '', 'vinte', 'trinta', 'quarenta', 'cinquenta', 'sessenta', 'setenta', 'oitenta', 'noventa'];
+  const c = ['', 'cento', 'duzentos', 'trezentos', 'quatrocentos', 'quinhentos', 'seiscentos', 'setecentos', 'oitocentos', 'novecentos'];
+  function ate999(n) {
+    if (n === 0) return '';
+    if (n === 100) return 'cem';
+    let r = '';
+    const ci = Math.floor(n/100), di = Math.floor((n%100)/10), ui = n%10;
+    if (ci > 0) r += c[ci];
+    if (di > 0 || ui > 0) {
+      if (r) r += ' e ';
+      if (di === 1) r += d10[ui];
+      else { if (di > 0) r += d[di]; if (ui > 0) { if (di > 0) r += ' e '; r += u[ui]; } }
+    }
+    return r;
+  }
+  // Regra: usa "e" antes do último bloco se ele for < 100 ou múltiplo exato de 100; caso contrário usa vírgula.
+  const ePequenoOuRedondo = n => n < 100 || n % 100 === 0;
+  function intExtenso(n) {
+    if (n === 0) return '';
+    const mi = Math.floor(n / 1000000);
+    const mil = Math.floor((n % 1000000) / 1000);
+    const resto = n % 1000;
+    const partes = [];
+    if (mi > 0)    partes.push({ v: mi,    t: ate999(mi)  + (mi === 1 ? ' milhão' : ' milhões') });
+    if (mil > 0)   partes.push({ v: mil,   t: (mil === 1 ? 'mil' : ate999(mil) + ' mil') });
+    if (resto > 0) partes.push({ v: resto, t: ate999(resto) });
+    let texto = '';
+    partes.forEach((p, i) => {
+      if (i === 0) texto = p.t;
+      else if (i === partes.length - 1 && ePequenoOuRedondo(p.v)) texto += ' e ' + p.t;
+      else texto += ', ' + p.t;
+    });
+    return texto;
+  }
+  const inteiros = Math.floor(valor);
+  const centavos = Math.round((valor - inteiros) * 100);
+  let texto = '';
+  if (inteiros > 0) {
+    texto = intExtenso(inteiros) + (inteiros === 1 ? ' real' : ' reais');
+  }
+  if (centavos > 0) {
+    if (texto) texto += ' e ';
+    texto += intExtenso(centavos) + (centavos === 1 ? ' centavo' : ' centavos');
+  }
+  return texto.trim();
+}
+const toast = msg => {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+};
+
+// ── SAUDAÇÃO ──
+const hour = new Date().getHours();
+document.getElementById('welcomeMsg').textContent =
+  hour < 12 ? 'Bom dia! 👋' : hour < 18 ? 'Boa tarde! 👋' : 'Boa noite! 👋';
+
+// ── UI DA EMPRESA ──
+function updateEmpresaUI() {
+  const logoWrap = document.getElementById('headerLogoWrap');
+  const logoImg  = document.getElementById('logoImg');
+  if (empresa.logo) {
+    logoImg.src = empresa.logo;
+    logoWrap.style.display = 'block';
+  } else {
+    logoWrap.style.display = 'none';
+  }
+  const nome = empresa.nome || 'Orçamentos';
+  document.getElementById('heroSub').textContent = empresa.nome
+    ? empresa.nome
+    : 'Configure sua empresa em ⚙️ Ajustes';
+  document.title = empresa.nome ? empresa.nome + ' – Orçamentos' : 'Sistema de Orçamentos';
+  const banner = document.getElementById('setupBanner');
+  banner.classList.toggle('hidden', !!empresa.nome);
+  const curScreen = state.screenHistory[state.screenHistory.length - 1];
+  if (curScreen === 'screenHome') {
+    document.getElementById('headerTitle').textContent = nome;
+  }
+}
+
+// ── NAVEGAÇÃO ──
+function showScreen(id, pushHistory=true) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (pushHistory) state.screenHistory.push(id);
+  updateHeader(id);
+}
+
+function updateHeader(sid) {
+  const nome = empresa.nome || 'Orçamentos';
+  const map = {
+    screenHome:           [nome,          'Sistema de Orçamentos'],
+    screenOrcamento:      ['Orçamento',   'Preencha os dados'],
+    screenRecibo:         ['Recibo',      'Preencha os dados'],
+    screenProdutos:       ['Produtos',    'Gerenciar catálogo'],
+    screenConfiguracoes:  ['Ajustes',     'Configurar empresa'],
+  };
+  const [title, sub] = map[sid] || [nome, ''];
+  document.getElementById('headerTitle').textContent = title;
+  document.getElementById('headerSub').textContent   = sub;
+  document.getElementById('btnBack').classList.toggle('hidden', sid === 'screenHome');
+}
+
+function goBack() {
+  state.screenHistory.pop();
+  const prev = state.screenHistory[state.screenHistory.length-1] || 'screenHome';
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(prev).classList.add('active');
+  updateHeader(prev);
+}
+
+
+// ── ORÇAMENTO ──
+function novoOrcamento() {
+  state.itens = [];
+  const num = novoNumOrc();
+  state.orcamentoAtual = { num, data: hoje() };
+  document.getElementById('numOrcamento').textContent  = num;
+  document.getElementById('dataOrcamento').textContent = hoje();
+  document.getElementById('inputCliente').value          = '';
+  document.getElementById('inputClienteDoc').value       = '';
+  document.getElementById('inputClienteEmail').value     = '';
+  document.getElementById('inputClienteTelefone').value  = '';
+  document.getElementById('inputClienteEndereco').value  = '';
+  document.getElementById('inputValidade').value         = hoje();
+  document.getElementById('inputEntrega').value          = '';
+  document.getElementById('inputObs').value              = '';
+  renderItens();
+  showScreen('screenOrcamento');
+}
+
+function getDadosOrcamento() {
+  return {
+    num:              state.orcamentoAtual.num,
+    data:             state.orcamentoAtual.data,
+    cliente:          document.getElementById('inputCliente').value          || 'CONSUMIDOR',
+    clienteDoc:       document.getElementById('inputClienteDoc').value       || '',
+    clienteEmail:     document.getElementById('inputClienteEmail').value     || '',
+    clienteTelefone:  document.getElementById('inputClienteTelefone').value  || '',
+    clienteEndereco:  document.getElementById('inputClienteEndereco').value  || '',
+    validade:         document.getElementById('inputValidade').value         || '30 dias',
+    entrega:          document.getElementById('inputEntrega').value,
+    obs:              document.getElementById('inputObs').value,
+    itens:            [...state.itens],
+    total:            getTotal()
+  };
+}
+
+const getTotal = () => state.itens.reduce((s,i) => s + (i.qtd * i.valor), 0);
+
+function renderItens() {
+  const cont  = document.getElementById('listaItens');
+  const badge = document.getElementById('badgeItens');
+  badge.textContent = state.itens.length;
+  if (!state.itens.length) {
+    cont.innerHTML = '<div style="text-align:center;padding:22px 0;color:#aaa;font-size:14px;">Nenhum item adicionado</div>';
+  } else {
+    cont.innerHTML = state.itens.map((item, idx) => `
+      <div class="item-card">
+        <button class="btn-remove" onclick="removerItem(${idx})">✕</button>
+        <div class="item-nome">${item.nome}</div>
+        ${item.detalhe ? `<div class="item-detalhe">${item.detalhe}</div>` : ''}
+        <div class="item-row">
+          <div>
+            <div class="item-col-label">Qtd.</div>
+            <input type="number" class="item-ctrl" value="${item.qtd}" min="1" onchange="updateItemQtd(${idx},this.value)">
+          </div>
+          <div>
+            <div class="item-col-label">Valor unit.</div>
+            <input type="text" inputmode="numeric" class="item-ctrl"
+              value="${fmtMoedaInput(item.valor)}"
+              oninput="maskItemValor(this, ${idx})"
+              placeholder="R$ 0,00">
+          </div>
+          <div>
+            <div class="item-col-label">Subtotal</div>
+            <input class="item-ctrl readonly" readonly value="${(item.qtd*item.valor).toFixed(2).replace('.',',')}">
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+  document.getElementById('totalDisplay').textContent = fmtMoeda(getTotal());
+}
+
+const fmtMoedaInput = v => {
+  if (!v) return '';
+  return v.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+};
+
+function maskItemValor(input, idx) {
+  let digits = input.value.replace(/\D/g, '');
+  if (!digits) { input.value = ''; state.itens[idx].valor = 0; atualizarSubtotal(idx); return; }
+  const num = parseInt(digits) / 100;
+  input.value = num.toLocaleString('pt-BR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  state.itens[idx].valor = num;
+  atualizarSubtotal(idx);
+}
+
+function atualizarSubtotal(idx) {
+  const subtotal = state.itens[idx].qtd * state.itens[idx].valor;
+  const cards = document.querySelectorAll('.item-card');
+  if (cards[idx]) {
+    const sub = cards[idx].querySelector('.item-ctrl.readonly');
+    if (sub) sub.value = fmtMoedaInput(subtotal);
+  }
+  document.getElementById('totalDisplay').textContent = fmtMoeda(getTotal());
+}
+
+const updateItemQtd = (idx,v) => { state.itens[idx].qtd = Math.max(1,parseInt(v)||1); renderItens(); };
+const removerItem   = idx     => { state.itens.splice(idx,1); renderItens(); };
+
+// ── MODAL PRODUTOS ──
+function showModalProduto() {
+  const prods = state.produtos.filter(p => p.ativo);
+  document.getElementById('modalListaProdutos').innerHTML = prods.length
+    ? prods.map(p => `
+        <div class="prod-option" onclick="adicionarProduto(${p.id})">
+          <div class="po-icon">📦</div>
+          <div>
+            <div class="po-nome">${p.nome}</div>
+            <div class="po-preco">${p.valor>0 ? fmtMoeda(p.valor) : 'Valor a definir'} · ${p.unidade}</div>
+          </div>
+        </div>`).join('')
+    : '<div style="padding:16px 0;color:#aaa;font-size:14px;text-align:center;">Nenhum produto cadastrado</div>';
+  document.getElementById('modalProduto').classList.remove('hidden');
+}
+
+const fecharModalProduto       = () => document.getElementById('modalProduto').classList.add('hidden');
+const fecharModalPersonalizado = () => document.getElementById('modalPersonalizado').classList.add('hidden');
+const fecharModalNovoProduto   = () => document.getElementById('modalNovoProduto').classList.add('hidden');
+
+function adicionarProduto(id) {
+  const p = state.produtos.find(x => x.id === id);
+  if (!p) return;
+  state.itens.push({ nome: p.nome, detalhe: '', qtd: 1, valor: p.valor||0 });
+  fecharModalProduto();
+  renderItens();
+}
+
+function adicionarPersonalizado() {
+  fecharModalProduto();
+  ['pNome','pDetalhe'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('pQtd').value   = '1';
+  document.getElementById('pValor').value = '';
+  document.getElementById('modalPersonalizado').classList.remove('hidden');
+}
+
+function confirmarPersonalizado() {
+  const nome = document.getElementById('pNome').value.trim();
+  if (!nome) { toast('Informe o nome do item'); return; }
+  state.itens.push({
+    nome,
+    detalhe: document.getElementById('pDetalhe').value.trim(),
+    qtd:     parseInt(document.getElementById('pQtd').value)||1,
+    valor:   parseMoeda(document.getElementById('pValor').value)
+  });
+  fecharModalPersonalizado();
+  renderItens();
+}
+
+// ── LISTA DE PRODUTOS ──
+function renderListaProdutos() {
+  const cont = document.getElementById('listaProdutos');
+  if (!state.produtos.length) {
+    cont.innerHTML = '<div class="empty-state"><div class="es-icon">📦</div><div class="es-text">Nenhum produto cadastrado<br><small style="font-size:12px;font-weight:400;">Use o botão + para adicionar</small></div></div>';
+    return;
+  }
+  cont.innerHTML = state.produtos.map((p,i) => `
+    <div class="prod-item ${!p.ativo?'inactive':''}">
+      <div>
+        <div class="pi-nome">${p.nome}</div>
+        <div class="pi-cat">${p.cat} · ${p.unidade}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="pi-preco">${p.valor>0?fmtMoeda(p.valor):'—'}</div>
+        <button onclick="editarProduto(${i})" style="background:none;border:none;font-size:16px;cursor:pointer;">✏️</button>
+        <button onclick="toggleProduto(${i})" style="background:none;border:none;font-size:16px;cursor:pointer;">${p.ativo?'✅':'⬜'}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function novoProduto() {
+  ['npNome','npCat','npValor'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('npUnidade').value = 'Unidade';
+  document.getElementById('modalNovoProdutoTitle').textContent = 'Novo produto';
+  document.getElementById('modalNovoProduto').dataset.editIdx = '';
+  document.getElementById('modalNovoProduto').classList.remove('hidden');
+}
+
+function editarProduto(idx) {
+  const p = state.produtos[idx];
+  document.getElementById('npNome').value    = p.nome;
+  document.getElementById('npCat').value     = p.cat;
+  document.getElementById('npValor').value   = p.valor > 0 ? p.valor.toFixed(2).replace('.',',') : '';
+  document.getElementById('npUnidade').value = p.unidade;
+  document.getElementById('modalNovoProdutoTitle').textContent = 'Editar produto';
+  document.getElementById('modalNovoProduto').dataset.editIdx = idx;
+  document.getElementById('modalNovoProduto').classList.remove('hidden');
+}
+
+function toggleProduto(idx) {
+  state.produtos[idx].ativo = !state.produtos[idx].ativo;
+  save(); renderListaProdutos();
+}
+
+function salvarNovoProduto() {
+  const nome = document.getElementById('npNome').value.trim();
+  if (!nome) { toast('Informe o nome'); return; }
+  const novo = {
+    id:      Date.now(),
+    nome,
+    cat:     document.getElementById('npCat').value.trim() || 'Geral',
+    valor:   parseMoeda(document.getElementById('npValor').value),
+    unidade: document.getElementById('npUnidade').value,
+    ativo:   true
+  };
+  const editIdx = document.getElementById('modalNovoProduto').dataset.editIdx;
+  if (editIdx !== '') state.produtos[parseInt(editIdx)] = { ...state.produtos[parseInt(editIdx)], ...novo };
+  else state.produtos.push(novo);
+  save(); renderListaProdutos(); fecharModalNovoProduto();
+  toast('✓ Produto salvo!');
+}
+
+// ── CONFIGURAÇÕES ──
+function abrirConfiguracoes() {
+  document.getElementById('confNome').value     = empresa.nome     || '';
+  document.getElementById('confCnpj').value     = empresa.cnpj     || '';
+  document.getElementById('confEndereco').value = empresa.endereco || '';
+  document.getElementById('confTelefone').value = empresa.telefone || '';
+  document.getElementById('confWhatsapp').value = empresa.whatsapp || '';
+  document.getElementById('confSite').value     = empresa.site     || '';
+
+  const prev        = document.getElementById('logoPreviewConf');
+  const placeholder = document.getElementById('logoPlaceholder');
+  const btnRemove   = document.getElementById('btnRemoveLogo');
+  if (empresa.logo) {
+    prev.src = empresa.logo; prev.style.display = 'block';
+    placeholder.style.display = 'none';
+    btnRemove.style.display = 'block';
+  } else {
+    prev.style.display = 'none';
+    placeholder.style.display = 'flex';
+    btnRemove.style.display = 'none';
+  }
+  showScreen('screenConfiguracoes');
+}
+
+function handleLogoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const b64 = e.target.result;
+    empresa.logo = b64;
+    const prev = document.getElementById('logoPreviewConf');
+    prev.src = b64; prev.style.display = 'block';
+    document.getElementById('logoPlaceholder').style.display = 'none';
+    document.getElementById('btnRemoveLogo').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function removerLogo() {
+  empresa.logo = '';
+  const prev = document.getElementById('logoPreviewConf');
+  prev.src = ''; prev.style.display = 'none';
+  document.getElementById('logoPlaceholder').style.display = 'flex';
+  document.getElementById('btnRemoveLogo').style.display = 'none';
+}
+
+function salvarConfiguracoes() {
+  const nome = document.getElementById('confNome').value.trim();
+  if (!nome) { toast('Informe o nome da empresa'); return; }
+  empresa.nome     = nome;
+  empresa.cnpj     = document.getElementById('confCnpj').value.trim();
+  empresa.endereco = document.getElementById('confEndereco').value.trim();
+  empresa.telefone = document.getElementById('confTelefone').value.trim();
+  empresa.whatsapp = document.getElementById('confWhatsapp').value.trim();
+  empresa.site     = document.getElementById('confSite').value.trim();
+  saveEmpresa();
+  updateEmpresaUI();
+  toast('✓ Configurações salvas!');
+  goBack();
+}
+
+// ── RECIBO ──
+let reciboAtual = null;
+
+function novoRecibo() {
+  const num = novoNumRecibo();
+  reciboAtual = { num, data: hoje() };
+  document.getElementById('numRecibo').textContent  = num;
+  document.getElementById('dataRecibo').textContent = hoje();
+  document.getElementById('inputRecPagador').value     = '';
+  document.getElementById('inputRecPagadorDoc').value  = '';
+  document.getElementById('inputRecValor').value       = '';
+  document.getElementById('inputRecExtenso').value     = '';
+  document.getElementById('inputRecReferente').value   = '';
+  document.getElementById('inputRecLocal').value       = 'Brasília';
+  document.getElementById('inputRecForma').value       = 'PIX';
+  document.getElementById('inputRecCanhoto').checked   = true;
+  const t = new Date();
+  document.getElementById('inputRecDataPagamento').value =
+    `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+  showScreen('screenRecibo');
+}
+
+function gerarPDFRecibo() {
+  const pagador   = document.getElementById('inputRecPagador').value.trim();
+  const valorStr  = document.getElementById('inputRecValor').value;
+  const valor     = parseMoeda(valorStr);
+  const referente = document.getElementById('inputRecReferente').value.trim();
+
+  if (!pagador)    { toast('Informe o nome do pagador'); return; }
+  if (!valor)      { toast('Informe o valor');           return; }
+  if (!referente)  { toast('Informe a referência');      return; }
+
+  const pagadorDoc = document.getElementById('inputRecPagadorDoc').value.trim();
+  const extenso    = document.getElementById('inputRecExtenso').value.trim() || valorPorExtenso(valor);
+  const forma      = document.getElementById('inputRecForma').value;
+  const local       = document.getElementById('inputRecLocal').value.trim();
+  const comCanhoto  = document.getElementById('inputRecCanhoto').checked;
+  const dataPagISO  = document.getElementById('inputRecDataPagamento').value;
+  const dataPag    = dataPagISO ? dataPagISO.split('-').reverse().join('/') : reciboAtual.data;
+  const data       = dataPag;
+  const num        = reciboAtual.num;
+
+  const meses = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const [dd,mm,aaaa] = data.split('/');
+  const dataExt = `${parseInt(dd)} de ${meses[parseInt(mm)-1]} de ${aaaa}`;
+  const localData = local ? `${local}, ${dataExt}` : dataExt;
+
+  const empInfoLines = [
+    empresa.cnpj     ? `CNPJ: ${esc(empresa.cnpj)}`       : null,
+    empresa.endereco ? esc(empresa.endereco)              : null,
+    [
+      empresa.telefone ? `Tel: ${esc(empresa.telefone)}`      : null,
+      empresa.whatsapp ? `WhatsApp: ${esc(empresa.whatsapp)}` : null
+    ].filter(Boolean).join('  |  ') || null,
+    empresa.site ? esc(empresa.site) : null
+  ].filter(Boolean).join('<br>');
+
+  const logoHtml = empresa.logo
+    ? `<img class="pdf-header-logo" src="${empresa.logo}" alt="">`
+    : '';
+
+  const pdfFooterLeft = [empresa.nome, empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : null].filter(Boolean).map(esc).join(' · ');
+
+  const htmlDoc = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>recibo_${num}</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Outfit',Arial,sans-serif; font-size:11pt; color:#0f172a; background:#fff; padding:12mm 14mm; }
+  @media print {
+    * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    body { padding:0; }
+    @page { margin:12mm 14mm; size:A4 portrait; }
+  }
+  .pdf-header { background:#0f172a; color:#fff; padding:12px 16px; display:flex; align-items:center; gap:14px; border-radius:6px 6px 0 0; }
+  .pdf-header-logo { width:70px; height:70px; object-fit:contain; flex-shrink:0; }
+  .pdf-header-empresa { flex:1; }
+  .emp-nome { font-size:12pt; font-weight:800; color:#fff; margin-bottom:4px; }
+  .emp-info { font-size:7.5pt; color:rgba(200,200,220,0.9); line-height:1.7; }
+  .pdf-header-num { text-align:right; flex-shrink:0; }
+  .rec-num { font-size:11pt; font-weight:800; color:#fff; }
+  .rec-meta { font-size:7.5pt; color:rgba(200,200,220,0.85); margin-top:4px; line-height:1.7; }
+  .pdf-title-bar { background:#2563eb; color:#fff; text-align:center; font-size:10pt; font-weight:800; letter-spacing:1.5px; padding:6px 0; margin-bottom:14px; }
+  .rec-valor-box { background:#f8fafc; border-left:4px solid #2563eb; padding:14px 18px; margin-bottom:18px; display:flex; justify-content:space-between; align-items:center; }
+  .rec-valor-label { font-size:8.5pt; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.5px; }
+  .rec-valor-num { font-size:20pt; font-weight:800; color:#0f172a; margin-top:2px; }
+  .rec-corpo { font-size:11pt; line-height:1.85; text-align:justify; margin-bottom:20px; padding:0 4px; }
+  .rec-corpo strong { font-weight:700; }
+  .rec-extenso { font-style:italic; }
+  .rec-info-grid { background:#f1f5f9; border-radius:6px; padding:12px 14px; margin-bottom:20px; display:grid; grid-template-columns:1fr 1fr; gap:8px 20px; font-size:9pt; }
+  .rec-info-label { font-size:7.5pt; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.3px; }
+  .rec-info-val { font-weight:600; color:#0f172a; }
+  .rec-local-data { text-align:right; font-size:10pt; margin:30px 0 40px; color:#0f172a; }
+  .rec-assinatura { text-align:center; margin:40px auto 0; width:65%; page-break-inside:avoid; break-inside:avoid; }
+  .rec-assin-linha { border-top:1px solid #0f172a; padding-top:6px; font-size:9pt; font-weight:700; color:#0f172a; }
+  .rec-assin-sub { font-size:8pt; color:#64748b; margin-top:2px; }
+  .rec-cut-line { border-top:1.5px dashed #aaa; margin:36px 0 18px; position:relative; text-align:center; page-break-inside:avoid; }
+  .rec-cut-line span { background:#fff; padding:0 10px; position:relative; top:-9px; font-size:11pt; color:#999; }
+  .rec-canhoto { border:1px solid #ddd; border-radius:6px; padding:12px 16px; font-size:9pt; page-break-inside:avoid; break-inside:avoid; }
+  .canhoto-header { display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid #eee; margin-bottom:8px; }
+  .canhoto-titulo { font-size:8.5pt; font-weight:800; letter-spacing:0.5px; color:#0f172a; }
+  .canhoto-valor { font-size:12pt; font-weight:800; color:#2563eb; }
+  .canhoto-body { line-height:1.7; color:#444; font-size:8.5pt; }
+  .canhoto-body strong { color:#0f172a; }
+  .canhoto-assin { margin-top:18px; text-align:center; }
+  .canhoto-linha { border-top:1px solid #0f172a; margin:0 auto; width:65%; padding-top:4px; font-size:7.5pt; color:#64748b; }
+  .pdf-footer { background:#0f172a; color:rgba(180,180,210,0.9); font-size:7.5pt; padding:8px 12px; display:flex; justify-content:space-between; border-radius:0 0 6px 6px; margin-top:18px; }
+  .rec-corpo, .rec-valor-box, .rec-info-grid, .rec-local-data { page-break-inside:avoid; break-inside:avoid; }
+</style>
+</head>
+<body>
+  <div class="pdf-header">
+    ${logoHtml}
+    <div class="pdf-header-empresa">
+      <div class="emp-nome">${esc(empresa.nome) || 'EMPRESA'}</div>
+      ${empInfoLines ? `<div class="emp-info">${empInfoLines}</div>` : ''}
+    </div>
+    <div class="pdf-header-num">
+      <div class="rec-num">Nº ${esc(num)}</div>
+      <div class="rec-meta">Data: ${esc(data)}</div>
+    </div>
+  </div>
+  <div class="pdf-title-bar">RECIBO DE PAGAMENTO</div>
+
+  <div class="rec-valor-box">
+    <span class="rec-valor-label">Valor recebido</span>
+    <span class="rec-valor-num">${fmtMoeda(valor)}</span>
+  </div>
+
+  <div class="rec-corpo">
+    Recebi(emos) de <strong>${esc(pagador)}</strong>${pagadorDoc ? `, inscrito(a) no CPF/CNPJ sob o nº <strong>${esc(pagadorDoc)}</strong>,` : ''} a importância de <strong>${fmtMoeda(valor)}</strong> <span class="rec-extenso">(${esc(extenso)})</span>, referente a <strong>${esc(referente).replace(/\n/g,'<br>')}</strong>.<br><br>
+    Para maior clareza firmo(amos) o presente recibo, dando plena, geral e irrevogável quitação do valor recebido.
+  </div>
+
+  <div class="rec-info-grid">
+    <div><div class="rec-info-label">Forma de pagamento</div><div class="rec-info-val">${esc(forma)}</div></div>
+    <div><div class="rec-info-label">Data do pagamento</div><div class="rec-info-val">${esc(data)}</div></div>
+  </div>
+
+  <div class="rec-local-data">${esc(localData)}.</div>
+
+  <div class="rec-assinatura">
+    <div class="rec-assin-linha">${esc(empresa.nome) || 'Recebedor'}</div>
+    ${empresa.cnpj ? `<div class="rec-assin-sub">CNPJ: ${esc(empresa.cnpj)}</div>` : ''}
+  </div>
+
+  ${comCanhoto ? `
+  <div class="rec-cut-line"><span>✂ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -</span></div>
+
+  <div class="rec-canhoto">
+    <div class="canhoto-header">
+      <span class="canhoto-titulo">RECIBO Nº ${esc(num)} — VIA / CANHOTO</span>
+      <span class="canhoto-valor">${fmtMoeda(valor)}</span>
+    </div>
+    <div class="canhoto-body">
+      <div><strong>Pagador:</strong> ${esc(pagador)}${pagadorDoc ? ` &nbsp;<span style="color:#64748b">(${esc(pagadorDoc)})</span>` : ''}</div>
+      <div><strong>Referente a:</strong> ${esc(referente).replace(/\n/g,' ')}</div>
+      <div><strong>Forma:</strong> ${esc(forma)} &nbsp;·&nbsp; <strong>Data:</strong> ${esc(data)}</div>
+    </div>
+    <div class="canhoto-assin">
+      <div class="canhoto-linha">${esc(empresa.nome) || 'Recebedor'}</div>
+    </div>
+  </div>` : ''}
+
+  <div class="pdf-footer">
+    <span>${pdfFooterLeft || 'Recibo'}</span>
+    <span>Recibo Nº ${esc(num)} · ${esc(data)}</span>
+  </div>
+  <script>window.onload=function(){window.print()};<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([htmlDoc], { type:'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) toast('⚠️ Permita pop-ups para gerar o PDF');
+  else setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+// ── PDF ──
+function gerarPDF() {
+  if (!state.itens.length) { toast('Adicione pelo menos um item'); return; }
+  const d = getDadosOrcamento();
+
+  const linhasItens = d.itens.map(item => {
+    const sub = item.qtd * item.valor;
+    return `<tr>
+      <td class="center">${item.qtd}</td>
+      <td><div class="td-nome">${esc(item.nome)}</div>${item.detalhe ? `<div class="td-det">${esc(item.detalhe)}</div>` : ''}</td>
+      <td>${fmtMoeda(item.valor)}</td>
+      <td class="subtotal">${fmtMoeda(sub)}</td>
+    </tr>`;
+  }).join('');
+
+  const opcionais = [
+    d.entrega && ['Previsão de Entrega', d.entrega],
+  ].filter(Boolean);
+
+  const clienteGrid = [
+    ['Cliente',  d.cliente],
+    d.clienteDoc      && ['CPF / CNPJ',  d.clienteDoc],
+    d.clienteEmail    && ['E-mail',      d.clienteEmail],
+    d.clienteTelefone && ['Telefone',    d.clienteTelefone],
+    d.clienteEndereco && ['Endereço',    d.clienteEndereco],
+    ['Validade', d.validade],
+    ...opcionais
+  ].filter(Boolean).map(([l,v]) => `<div><div class="cl-label">${esc(l)}</div><div class="cl-val">${esc(v)}</div></div>`).join('');
+
+  const obsHtml = d.obs
+    ? `<div class="pdf-section-title">Observações</div><div class="pdf-obs">${esc(d.obs).replace(/\n/g,'<br>')}</div>`
+    : '';
+
+  const empInfoLines = [
+    empresa.cnpj     ? `CNPJ: ${esc(empresa.cnpj)}`       : null,
+    empresa.endereco ? esc(empresa.endereco)              : null,
+    [
+      empresa.telefone ? `Tel: ${esc(empresa.telefone)}`      : null,
+      empresa.whatsapp ? `WhatsApp: ${esc(empresa.whatsapp)}` : null
+    ].filter(Boolean).join('  |  ') || null,
+    empresa.site ? esc(empresa.site) : null
+  ].filter(Boolean).join('<br>');
+
+  const logoHtml = empresa.logo
+    ? `<img class="pdf-header-logo" src="${empresa.logo}" alt="">`
+    : '';
+
+  const pdfFooterLeft = [empresa.nome, empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : null].filter(Boolean).map(esc).join(' · ');
+
+  const htmlDoc = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>orcamento_${d.num}</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:'Outfit',Arial,sans-serif; font-size:10pt; color:#0f172a; background:#fff; padding:12mm 14mm; }
+  @media print {
+    * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+    body { padding:0; }
+    @page { margin:12mm 14mm; size:A4 portrait; }
+  }
+  .pdf-header { background:#0f172a; color:#fff; padding:12px 16px; display:flex; align-items:center; gap:14px; border-radius:6px 6px 0 0; }
+  .pdf-header-logo { width:70px; height:70px; object-fit:contain; flex-shrink:0; }
+  .pdf-header-empresa { flex:1; }
+  .emp-nome { font-size:12pt; font-weight:800; color:#fff; margin-bottom:4px; }
+  .emp-info { font-size:7.5pt; color:rgba(200,200,220,0.9); line-height:1.7; }
+  .pdf-header-num { text-align:right; flex-shrink:0; }
+  .orc-num { font-size:11pt; font-weight:800; color:#fff; }
+  .orc-meta { font-size:7.5pt; color:rgba(200,200,220,0.85); margin-top:4px; line-height:1.7; }
+  .pdf-title-bar { background:#2563eb; color:#fff; text-align:center; font-size:9pt; font-weight:800; letter-spacing:1px; padding:5px 0; margin-bottom:12px; }
+  .pdf-section-title { background:#f8fafc; font-size:8pt; font-weight:800; color:#0f172a; letter-spacing:0.5px; text-transform:uppercase; padding:5px 8px; margin-bottom:8px; border-left:3px solid #2563eb; }
+  .pdf-cliente-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 20px; margin-bottom:12px; font-size:9pt; }
+  .cl-label { font-size:7.5pt; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:0.3px; }
+  .cl-val { font-weight:600; color:#0f172a; }
+  .pdf-table { width:100%; border-collapse:collapse; margin-bottom:10px; font-size:8.5pt; }
+  .pdf-table thead { display:table-header-group; }
+  .pdf-table tr { page-break-inside:avoid; break-inside:avoid; }
+  .pdf-table thead tr { background:#0f172a; color:#fff; }
+  .pdf-table thead th { padding:6px 7px; text-align:left; font-weight:700; font-size:8pt; }
+  .pdf-table thead th.right { text-align:right; }
+  .pdf-table tbody tr:nth-child(even) { background:#f1f5f9; }
+  .pdf-table tbody td { padding:7px; border-bottom:1px solid #e2e8f0; vertical-align:top; }
+  .pdf-table tbody td.center { text-align:center; font-weight:700; }
+  .pdf-table tbody td.subtotal { text-align:right; font-weight:800; color:#2563eb; }
+  .pdf-total-row, .pdf-assinatura, .pdf-obs { page-break-inside:avoid; break-inside:avoid; }
+  .td-nome { font-weight:700; color:#0f172a; }
+  .td-det { font-size:7.5pt; color:#64748b; margin-top:2px; }
+  .pdf-total-row { display:flex; justify-content:flex-end; margin-bottom:14px; }
+  .pdf-total-box { background:#0f172a; color:#fff; padding:8px 16px; border-radius:6px; display:flex; align-items:center; gap:16px; }
+  .t-label { font-size:9pt; font-weight:600; color:rgba(255,255,255,0.75); }
+  .t-val { font-size:13pt; font-weight:800; }
+  .pdf-obs { background:#f1f5f9; border-left:3px solid #2563eb; padding:8px 10px; font-size:8.5pt; color:#444; margin-bottom:14px; line-height:1.5; }
+  .pdf-assinatura { display:flex; justify-content:space-between; margin-top:24px; margin-bottom:10px; }
+  .assin-col { text-align:center; width:42%; }
+  .assin-linha { border-top:1px solid #bbb; padding-top:6px; font-size:8pt; color:#888; }
+  .pdf-footer { background:#0f172a; color:rgba(180,180,210,0.9); font-size:7.5pt; padding:8px 12px; display:flex; justify-content:space-between; border-radius:0 0 6px 6px; margin-top:12px; }
+</style>
+</head>
+<body>
+  <div class="pdf-header">
+    ${logoHtml}
+    <div class="pdf-header-empresa">
+      <div class="emp-nome">${esc(empresa.nome) || 'EMPRESA'}</div>
+      ${empInfoLines ? `<div class="emp-info">${empInfoLines}</div>` : ''}
+    </div>
+    <div class="pdf-header-num">
+      <div class="orc-num">Nº ${esc(d.num)}</div>
+      <div class="orc-meta">Data: ${esc(d.data)}<br>Validade: ${esc(d.validade)}</div>
+    </div>
+  </div>
+  <div class="pdf-title-bar">PROPOSTA COMERCIAL</div>
+  <div class="pdf-section-title">Dados do Cliente</div>
+  <div class="pdf-cliente-grid">${clienteGrid}</div>
+  <div class="pdf-section-title">Itens do Orçamento</div>
+  <table class="pdf-table">
+    <thead><tr>
+      <th style="width:7%">Qt.</th>
+      <th style="width:46%">Produto / Serviço</th>
+      <th style="width:20%">Valor unit.</th>
+      <th class="right" style="width:27%">Subtotal</th>
+    </tr></thead>
+    <tbody>${linhasItens}</tbody>
+  </table>
+  <div class="pdf-total-row">
+    <div class="pdf-total-box">
+      <span class="t-label">TOTAL DO ORÇAMENTO</span>
+      <span class="t-val">${fmtMoeda(d.total)}</span>
+    </div>
+  </div>
+  ${obsHtml}
+  <div class="pdf-assinatura">
+    <div class="assin-col"><div class="assin-linha">Assinatura do cliente</div></div>
+    <div class="assin-col"><div class="assin-linha">${esc(empresa.nome) || 'Empresa'}</div></div>
+  </div>
+  <div class="pdf-footer">
+    <span>${pdfFooterLeft || 'Sistema de Orçamentos'}</span>
+    <span>Orçamento Nº ${esc(d.num)} · ${esc(d.data)}</span>
+  </div>
+  <script>window.onload=function(){window.print()};<\/script>
+</body>
+</html>`;
+
+  const blob = new Blob([htmlDoc], { type:'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) toast('⚠️ Permita pop-ups para gerar o PDF');
+  else setTimeout(() => URL.revokeObjectURL(url), 60000);
+}
+
+// ── MÁSCARA CPF / CNPJ ──
+document.getElementById('inputClienteDoc').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '');
+  if (v.length <= 11) {
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  } else {
+    v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+    v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+    v = v.replace(/(\d{4})(\d)/, '$1-$2');
+  }
+  this.value = v;
+});
+
+// ── MÁSCARA TELEFONE ──
+document.getElementById('inputClienteTelefone').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length === 0) { this.value = ''; return; }
+  if (v.length <= 10) {
+    v = v.replace(/(\d{2})(\d)/, '($1) $2');
+    v = v.replace(/(\d{4})(\d)/, '$1-$2');
+  } else {
+    v = v.replace(/(\d{2})(\d)/, '($1) $2');
+    v = v.replace(/(\d{5})(\d)/, '$1-$2');
+  }
+  this.value = v;
+});
+
+// ── MÁSCARA DATA ENTREGA ──
+document.getElementById('inputEntrega').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').slice(0, 8);
+  v = v.replace(/(\d{2})(\d)/, '$1/$2');
+  v = v.replace(/(\d{2})\/(\d{2})(\d)/, '$1/$2/$3');
+  this.value = v;
+});
+['pValor','npValor'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.setAttribute('inputmode','numeric');
+  el.addEventListener('input', function() {
+    let digits = this.value.replace(/\D/g,'');
+    if (!digits) { this.value=''; return; }
+    this.value = (parseInt(digits)/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  });
+});
+
+// ── MÁSCARAS DO RECIBO ──
+document.getElementById('inputRecValor').addEventListener('input', function() {
+  let digits = this.value.replace(/\D/g,'');
+  if (!digits) {
+    this.value = '';
+    document.getElementById('inputRecExtenso').value = '';
+    return;
+  }
+  const num = parseInt(digits) / 100;
+  this.value = num.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById('inputRecExtenso').value = valorPorExtenso(num);
+});
+
+document.getElementById('inputRecPagadorDoc').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '');
+  if (v.length <= 11) {
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d)/, '$1.$2');
+    v = v.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  } else {
+    v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+    v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+    v = v.replace(/(\d{4})(\d)/, '$1-$2');
+  }
+  this.value = v;
+});
+
+// ── MÁSCARAS DA TELA AJUSTES (EMPRESA) ──
+document.getElementById('confCnpj').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').slice(0, 14);
+  v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+  v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+  v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+  v = v.replace(/(\d{4})(\d)/, '$1-$2');
+  this.value = v;
+});
+
+['confTelefone','confWhatsapp'].forEach(id => {
+  document.getElementById(id).addEventListener('input', function() {
+    let v = this.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length === 0) { this.value = ''; return; }
+    if (v.length <= 10) {
+      v = v.replace(/(\d{2})(\d)/, '($1) $2');
+      v = v.replace(/(\d{4})(\d)/, '$1-$2');
+    } else {
+      v = v.replace(/(\d{2})(\d)/, '($1) $2');
+      v = v.replace(/(\d{5})(\d)/, '$1-$2');
+    }
+    this.value = v;
+  });
+});
+
+// ── FECHAR MODAIS AO CLICAR FORA ──
+['modalProduto','modalPersonalizado','modalNovoProduto'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) this.classList.add('hidden');
+  });
+});
+
+// ── INIT ──
+updateEmpresaUI();
+renderListaProdutos();
+</script>
+</body>
+</html>
