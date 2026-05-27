@@ -362,6 +362,11 @@
   <!-- CONFIGURAÇÕES -->
   <div class="screen" id="screenConfiguracoes">
     <div class="conf-content">
+      <div style="background:#f0f9ff;border:1.5px solid #bae6fd;border-radius:12px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">🔒</span>
+        <div style="font-size:12px;color:#0369a1;font-weight:600;">Dados fixos da empresa · Somente leitura</div>
+      </div>
+
       <div class="form-group">
         <label class="form-label">Logo da empresa</label>
         <div class="logo-upload-area" onclick="document.getElementById('logoFileInput').click()">
@@ -379,12 +384,12 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">Nome da empresa *</label>
-        <input class="form-input" id="confNome" placeholder="Ex: Minha Empresa Ltda">
+        <label class="form-label">Nome da empresa</label>
+        <input class="form-input" id="confNome" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
       </div>
       <div class="form-group">
         <label class="form-label">CNPJ</label>
-        <input class="form-input" id="confCnpj" placeholder="00.000.000/0000-00" inputmode="numeric">
+        <input class="form-input" id="confCnpj" placeholder="—" inputmode="numeric">
       </div>
       <div class="form-group">
         <label class="form-label">Endereço</label>
@@ -393,11 +398,11 @@
       <div class="two-col">
         <div class="form-group">
           <label class="form-label">Telefone</label>
-          <input class="form-input" id="confTelefone" placeholder="(00) 0000-0000" inputmode="tel">
+          <input class="form-input" id="confTelefone" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
         </div>
         <div class="form-group">
           <label class="form-label">WhatsApp</label>
-          <input class="form-input" id="confWhatsapp" placeholder="(00) 00000-0000" inputmode="tel">
+          <input class="form-input" id="confWhatsapp" readonly style="background:#f1f5f9;color:#475569;cursor:not-allowed;">
         </div>
       </div>
       <div class="form-group">
@@ -405,8 +410,8 @@
         <input class="form-input" id="confSite" placeholder="Opcional">
       </div>
 
-      <button class="btn-pdf" onclick="salvarConfiguracoes()" style="margin-top:8px;">💾 Salvar configurações</button>
-      <button class="btn-save" onclick="goBack()" style="margin-top:8px;">Cancelar</button>
+      <button class="btn-pdf" onclick="salvarConfiguracoes()" style="margin-top:8px;">💾 Salvar</button>
+      <button class="btn-save" onclick="goBack()" style="margin-top:8px;">Voltar</button>
     </div>
   </div>
 
@@ -491,13 +496,41 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ── EMPRESA (dados genéricos configuráveis) ──
-const EMPRESA_DEFAULT = { nome:'', cnpj:'', endereco:'', telefone:'', whatsapp:'', site:'', logo:'' };
-let empresa = JSON.parse(localStorage.getItem('app_empresa') || 'null') || { ...EMPRESA_DEFAULT };
+// ── EMPRESA (dados fixos R8 Eventos) ──
+const EMPRESA_FIXO = {
+  nome:      'R8 Eventos',
+  cnpj:      '',
+  endereco:  'Brasília - DF',
+  telefone:  '(61) 3471-3472',
+  whatsapp:  '(61) 99996-1628',
+  site:      'lucasr8eventos@gmail.com',
+  logo:      ''
+};
+// Sempre garante que os dados fixos estejam presentes
+const _empSalvo = JSON.parse(localStorage.getItem('app_empresa') || 'null');
+let empresa = _empSalvo ? { ...EMPRESA_FIXO, ..._empSalvo, nome: EMPRESA_FIXO.nome, telefone: EMPRESA_FIXO.telefone, whatsapp: EMPRESA_FIXO.whatsapp } : { ...EMPRESA_FIXO };
+
+// ── CATÁLOGO PADRÃO R8 EVENTOS ──
+const CATALOGO_PADRAO = [
+  { id:1, nome:'Banheiro químico',                 cat:'Sanitários',      valor:0, unidade:'Unidade',  ativo:true },
+  { id:2, nome:'Banheiro químico PNE',             cat:'Sanitários',      valor:0, unidade:'Unidade',  ativo:true },
+  { id:3, nome:'Banheiro químico de luxo',         cat:'Sanitários',      valor:0, unidade:'Unidade',  ativo:true },
+  { id:4, nome:'Banheiro trailer de luxo 2 boxes', cat:'Sanitários',      valor:0, unidade:'Diária',   ativo:true },
+  { id:5, nome:'Banheiro trailer de luxo 4 boxes', cat:'Sanitários',      valor:0, unidade:'Diária',   ativo:true },
+  { id:6, nome:'Tenda 4x4',                        cat:'Tendas',          valor:0, unidade:'Unidade',  ativo:true },
+  { id:7, nome:'Tenda 5x5',                        cat:'Tendas',          valor:0, unidade:'Unidade',  ativo:true },
+  { id:8, nome:'Tenda 6x6',                        cat:'Tendas',          valor:0, unidade:'Unidade',  ativo:true },
+  { id:9, nome:'Tenda 8x8',                        cat:'Tendas',          valor:0, unidade:'Unidade',  ativo:true },
+  { id:10,nome:'Tenda 10x10',                      cat:'Tendas',          valor:0, unidade:'Unidade',  ativo:true },
+  { id:11,nome:'Alambrado',                        cat:'Infraestrutura',  valor:0, unidade:'Metro',    ativo:true },
+  { id:12,nome:'Fechamento metálico',              cat:'Infraestrutura',  valor:0, unidade:'Metro',    ativo:true },
+  { id:13,nome:'Balcão de bar',                    cat:'Mobiliário',      valor:0, unidade:'Unidade',  ativo:true },
+];
 
 // ── STATE ──
+const _prodSalvos = JSON.parse(localStorage.getItem('app_produtos') || '[]');
 let state = {
-  produtos:        JSON.parse(localStorage.getItem('app_produtos') || '[]'),
+  produtos:        _prodSalvos.length ? _prodSalvos : CATALOGO_PADRAO,
   orcamentoAtual:  null,
   itens:           [],
   screenHistory:   ['screenHome']
@@ -908,15 +941,18 @@ function removerLogo() {
 }
 
 function salvarConfiguracoes() {
-  const nome = document.getElementById('confNome').value.trim();
-  if (!nome) { toast('Informe o nome da empresa'); return; }
-  empresa.nome     = nome;
+  // campos fixos: nome, telefone, whatsapp – não alterados pelo usuário
+  empresa.nome     = EMPRESA_FIXO.nome;
   empresa.cnpj     = document.getElementById('confCnpj').value.trim();
   empresa.endereco = document.getElementById('confEndereco').value.trim();
-  empresa.telefone = document.getElementById('confTelefone').value.trim();
-  empresa.whatsapp = document.getElementById('confWhatsapp').value.trim();
-  empresa.site     = document.getElementById('confSite').value.trim();
+  empresa.telefone = EMPRESA_FIXO.telefone;
+  empresa.whatsapp = EMPRESA_FIXO.whatsapp;
+  empresa.site     = document.getElementById('confSite').value.trim() || EMPRESA_FIXO.site;
   saveEmpresa();
+  // salva catálogo padrão no localStorage se ainda estiver vazio
+  if (!localStorage.getItem('app_produtos') || JSON.parse(localStorage.getItem('app_produtos')).length === 0) {
+    localStorage.setItem('app_produtos', JSON.stringify(CATALOGO_PADRAO));
+  }
   updateEmpresaUI();
   toast('✓ Configurações salvas!');
   goBack();
@@ -1364,6 +1400,12 @@ document.getElementById('confCnpj').addEventListener('input', function() {
 });
 
 // ── INIT ──
+// Garante catálogo padrão no localStorage
+if (!localStorage.getItem('app_produtos') || JSON.parse(localStorage.getItem('app_produtos')).length === 0) {
+  localStorage.setItem('app_produtos', JSON.stringify(CATALOGO_PADRAO));
+}
+// Garante dados fixos da empresa
+saveEmpresa();
 updateEmpresaUI();
 renderListaProdutos();
 </script>
