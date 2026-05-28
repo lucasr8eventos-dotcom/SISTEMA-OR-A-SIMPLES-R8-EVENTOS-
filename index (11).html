@@ -508,6 +508,7 @@ const EMPRESA_FIXO = {
 };
 let LOGO_PDF = null; // carregado via fetch
 async function preloadLogo() {
+  if (LOGO_PDF) return;
   try {
     const resp = await fetch('logo_r8.png');
     const blob = await resp.blob();
@@ -676,7 +677,7 @@ function updateHeader(sid) {
   // Na home, mostra logo e esconde texto; nas demais, mostra texto
   const logoWrap   = document.getElementById('headerLogoWrap');
   const headerText = document.getElementById('headerText');
-  if (sid === 'screenHome' && (empresa.logo || EMPRESA_FIXO.logo)) {
+  if (sid === 'screenHome') {
     logoWrap.style.display   = 'block';
     headerText.style.display = 'none';
   } else {
@@ -995,6 +996,23 @@ function novoRecibo() {
   showScreen('screenRecibo');
 }
 
+
+function getPdfHeaderParts() {
+  const empInfoLines = [
+    empresa.cnpj     ? `CNPJ: ${esc(empresa.cnpj)}`                                    : null,
+    empresa.endereco ? esc(empresa.endereco)                                            : null,
+    [
+      empresa.telefone ? `Tel: ${esc(empresa.telefone)}`      : null,
+      empresa.whatsapp ? `WhatsApp: ${esc(empresa.whatsapp)}` : null
+    ].filter(Boolean).join('  |  ') || null,
+    empresa.site ? esc(empresa.site) : null
+  ].filter(Boolean).join('<br>');
+
+  const logoSrcPDF = (empresa.logo && empresa.logo.startsWith('data:')) ? empresa.logo : LOGO_PDF;
+  const logoHtml   = logoSrcPDF ? `<img class="pdf-header-logo" src="${logoSrcPDF}" alt="">` : '';
+  const footerLeft = [empresa.nome, empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : null].filter(Boolean).map(esc).join(' · ');
+  return { empInfoLines, logoHtml, footerLeft };
+}
 async function gerarPDFRecibo() {
   await preloadLogo();
   const pagador   = document.getElementById('inputRecPagador').value.trim();
@@ -1021,22 +1039,7 @@ async function gerarPDFRecibo() {
   const dataExt = `${parseInt(dd)} de ${meses[parseInt(mm)-1]} de ${aaaa}`;
   const localData = local ? `${local}, ${dataExt}` : dataExt;
 
-  const empInfoLines = [
-    empresa.cnpj     ? `CNPJ: ${esc(empresa.cnpj)}`       : null,
-    empresa.endereco ? esc(empresa.endereco)              : null,
-    [
-      empresa.telefone ? `Tel: ${esc(empresa.telefone)}`      : null,
-      empresa.whatsapp ? `WhatsApp: ${esc(empresa.whatsapp)}` : null
-    ].filter(Boolean).join('  |  ') || null,
-    empresa.site ? esc(empresa.site) : null
-  ].filter(Boolean).join('<br>');
-
-  const logoSrcPDF = (empresa.logo && empresa.logo.startsWith('data:')) ? empresa.logo : LOGO_PDF;
-  const logoHtml = logoSrcPDF
-    ? `<img class="pdf-header-logo" src="${logoSrcPDF}" alt="">`
-    : '';
-
-  const pdfFooterLeft = [empresa.nome, empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : null].filter(Boolean).map(esc).join(' · ');
+  const { empInfoLines, logoHtml, footerLeft: pdfFooterLeft } = getPdfHeaderParts();
 
   const htmlDoc = `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -1191,22 +1194,7 @@ async function gerarPDF() {
     ? `<div class="pdf-section-title">Observações</div><div class="pdf-obs">${esc(d.obs).replace(/\n/g,'<br>')}</div>`
     : '';
 
-  const empInfoLines = [
-    empresa.cnpj     ? `CNPJ: ${esc(empresa.cnpj)}`       : null,
-    empresa.endereco ? esc(empresa.endereco)              : null,
-    [
-      empresa.telefone ? `Tel: ${esc(empresa.telefone)}`      : null,
-      empresa.whatsapp ? `WhatsApp: ${esc(empresa.whatsapp)}` : null
-    ].filter(Boolean).join('  |  ') || null,
-    empresa.site ? esc(empresa.site) : null
-  ].filter(Boolean).join('<br>');
-
-  const logoSrcPDF = (empresa.logo && empresa.logo.startsWith('data:')) ? empresa.logo : LOGO_PDF;
-  const logoHtml = logoSrcPDF
-    ? `<img class="pdf-header-logo" src="${logoSrcPDF}" alt="">`
-    : '';
-
-  const pdfFooterLeft = [empresa.nome, empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : null].filter(Boolean).map(esc).join(' · ');
+  const { empInfoLines, logoHtml, footerLeft: pdfFooterLeft } = getPdfHeaderParts();
 
   const htmlDoc = `<!DOCTYPE html>
 <html lang="pt-BR">
